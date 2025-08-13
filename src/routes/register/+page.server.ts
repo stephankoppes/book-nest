@@ -51,7 +51,6 @@ export const actions = {
             return returnObject;
         }
 
-        // Registration flow.
         const { data, error } = await supabase.auth.signUp({
             email,
             password
@@ -63,6 +62,14 @@ export const actions = {
             returnObject.success = false;
             return fail(400, returnObject);
         }
+
+        const userId = data.user.id;
+        await supabase.from("user_names").insert([
+            {
+                user_id: userId,
+                name
+            }
+        ])
 
         redirect(303, "/private/dashboard");
     }
