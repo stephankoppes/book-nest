@@ -3,4 +3,5 @@
 
     let { form } = $props();
 </script>
+
 <AuthForm isRegistration={true} {form} />
