@@ -1,6 +1,10 @@
 <script lang="ts">
     import bookNestLogo from "$assets/app-logo.svg";
     import Button from "$components/Button.svelte";
+    import { getUserState } from "$lib/state/user-state.svelte";
+
+    let userContext = getUserState();
+    let { user, userName } = $derived(userContext);
 </script>
 
 <header>
@@ -8,14 +12,25 @@
         <img class="logo" src={bookNestLogo} alt="Go to home" />
     </a>
     <nav>
-        <ul>
-            <li>
-                <Button isMenu={true} href="/register">Create account</Button>
-            </li>
-            <li>
-                <Button isMenu={true} isSecondary={true} href="/login">Login</Button>
-            </li>
-        </ul>
+        {#if !user}
+            <ul>
+                <li>
+                    <Button isMenu={true} href="/register">Create account</Button>
+                </li>
+                <li>
+                    <Button isMenu={true} isSecondary={true} href="/login">Login</Button>
+                </li>
+            </ul>
+        {:else}
+            <ul>
+                <li>
+                    {userName}
+                </li>
+                <li>
+                    <Button isMenu={true} onclick={() => userContext.logout()}>Logout</Button>
+                </li>
+            </ul>
+        {/if}
     </nav>
 </header>
 
@@ -29,6 +44,7 @@
 
     ul {
         display: flex;
+        align-items: center;
         column-gap: 24px;
     }
 
