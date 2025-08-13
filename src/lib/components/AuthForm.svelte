@@ -14,7 +14,7 @@
     <h1 class="mb-l">{isRegistration ? "Register" : "Login"}</h1>
     <div class="form-and-social-login">
         <form class="auth-form" method="POST">
-            {#if  form && form.errors?.length}
+            {#if form && form.errors?.length}
                 {#each form.errors as error}
                     <div class="auth-error">
                         <p>{error}</p>
@@ -22,15 +22,16 @@
                 {/each}
             {/if}
             {#if isRegistration}
-                <input placeholder="Name" type="text" name="name" />
+                <input placeholder="Name" type="text" name="name" value={form?.name || ""} />
             {/if}
-            <input placeholder="Email" type="text" name="email" />
-            <input placeholder="Password" type="password" name="password" />
+            <input placeholder="Email" type="text" name="email" value={form?.email || ""} />
+            <input placeholder="Password" type="password" name="password" value={form?.password || ""} />
             {#if isRegistration}
                 <input
                     placeholder="Confirm password"
-                    type="text"
+                    type="password"
                     name="passwordConfirmation"
+                    value={form?.passwordConfirmation || ""}
                 />
             {/if}
 
@@ -68,7 +69,7 @@
         align-items: start;
         border-right: 1px solid grey;
         padding-right: 80px;
-        width: 40%
+        width: 40%;
     }
 
     .auth-hint {
