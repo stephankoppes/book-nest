@@ -1,9 +1,12 @@
 <script lang="ts">
+    import BookCard from "$components/BookCard.svelte";
+    import BookCategory from "$components/BookCategory.svelte";
+    import StarRating from "$components/StarRating.svelte";
     import { getUserState } from "$lib/state/user-state.svelte";
     import Icon from "@iconify/svelte";
 
     let userContext = getUserState();
-    let { userName } = $derived(userContext);
+    let { userName, allBooks } = $derived(userContext);
 </script>
 
 <div class="dashbaord">
@@ -14,11 +17,28 @@
         </a>
         <div class="headline">
             <h3 class="bold mb-xs">welcome Back, {userName}</h3>
-            <p>There's nothing quite like the journey a good book can take you on. Have you discovered any new favorites recently?</p>
+            <p>
+                There's nothing quite like the journey a good book can take you
+                on. Have you discovered any new favorites recently?
+            </p>
         </div>
     </div>
-
-    <!-- BookCategories-->
+    <BookCategory
+        booksToDisplay={userContext.getCurrentlyReadingBooks()}
+        categoryName={"Currently reading"}
+    />
+    <BookCategory
+        booksToDisplay={userContext.getHighestRatedBooks()}
+        categoryName={"Your favorite books"}
+    />
+    <BookCategory
+        booksToDisplay={userContext.getUnreadBooks()}
+        categoryName={"Recently added, unread books"}
+    />
+    <BookCategory
+        booksToDisplay={allBooks.slice(0, 10)}
+        categoryName={`Highest rated books from your favorite genre: ${userContext.getFavoriteGenre()}`}
+    />
 </div>
 
 <style>
@@ -26,7 +46,7 @@
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        width: 100%
+        width: 100%;
     }
 
     .add-book {
