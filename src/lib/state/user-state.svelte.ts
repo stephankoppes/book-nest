@@ -94,7 +94,7 @@ export class UserState {
             user_id: userId
         }));
 
-        const {error} = await this.supabase.from("books").insert(processedBooks);
+        const { error } = await this.supabase.from("books").insert(processedBooks);
         if (error) {
             throw new Error(error.message);
         } else {
@@ -113,6 +113,31 @@ export class UserState {
         }
     }
 
+    async updateAccountData(email: string, userName: string) {
+        if (!this.session) {
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/update-account", {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application.json",
+                    Authorization: `Bearer ${this.session.access_token}`,
+                },
+                body: JSON.stringify({
+                    email, userName
+                })
+            });
+
+            if (response.ok) {
+                this.userName = userName;
+            }
+        } catch (error) {
+            console.log(`Failed to delete account:`, error);
+        }
+    }
+
     async logout() {
         await this.supabase?.auth.signOut();
         goto("/login");
@@ -120,6 +145,29 @@ export class UserState {
 
     getBookById(bookId: number) {
         return this.allBooks.find((book) => book.id === bookId);
+    }
+
+    async deleteAccount() {
+        if (!this.session) {
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/delete-account", {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application.json",
+                    Authorization: `Bearer ${this.session.access_token}`,
+                },
+            });
+
+            if (response.ok) {
+                await this.logout();
+                goto("/");
+            }
+        } catch (error) {
+            console.log("Failed to delete account:", error);
+        }
     }
 
     async updateBook(bookId: number, updatedObject: Partial<UpdatableBookFields>) {
@@ -176,7 +224,7 @@ export class UserState {
     }
 
     getFavoriteGenre() {
-        if (this.allBooks.length === 0) {
+        if (this.allBooks.filter(book => book.genre).length === 0) {
             return "";
         }
 
