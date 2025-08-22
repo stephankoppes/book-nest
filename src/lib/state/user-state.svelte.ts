@@ -9,6 +9,11 @@ interface UserStateProps {
     user: User | null;
 }
 
+export interface OpenAiBook {
+    author: string;
+    bookTitle: string;
+}
+
 export interface Book {
     author: string | null;
     cover_image: string | null;
@@ -22,6 +27,8 @@ export interface Book {
     title: string;
     user_id: string;
 }
+
+type UpdatableBookFields = Omit<Book, "id" | "user_id" | "created_at">;
 
 export class UserState {
     session = $state<Session | null>(null);
@@ -64,7 +71,7 @@ export class UserState {
     }
 
     getCurrentlyReadingBooks() {
-        return this.allBooks.filter((book) => book.started_reading_on && !book.finished_reading_on).toSorted((a, z) => new Date(z.started_reading_on).getTime() - new Date(a.started_reading_on).getTime).slice(0, 9);
+        return this.allBooks.filter((book) => book.started_reading_on && !book.finished_reading_on).toSorted((a, z) => new Date(z.started_reading_on).getTime() - new Date(a.started_reading_on).getTime()).slice(0, 9);
     }
     getHighestRatedBooks() {
         return this.allBooks.filter((book) => book.rating).toSorted((a, z) => z.rating! - a.rating!).slice(0, 9);
@@ -74,9 +81,98 @@ export class UserState {
         return this.allBooks.filter((book) => !book.started_reading_on).toSorted((a, z) => new Date(z.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 9);
     }
 
+    async addBooksToLibrary(booksToAdd: OpenAiBook[]) {
+        if (!this.supabase || !this.user) {
+            return;
+        }
+
+        const userId = this.user.id;
+
+        const processedBooks = booksToAdd.map(book => ({
+            title: book.bookTitle,
+            author: book.author,
+            user_id: userId
+        }));
+
+        const {error} = await this.supabase.from("books").insert(processedBooks);
+        if (error) {
+            throw new Error(error.message);
+        } else {
+            // Method 1: this function also refreshes the user data and therefore 
+            //           does an extra request.
+            // await this.fetchUserData();
+
+            // Method 2: rewrite above function which only refreshes the books
+            const { data } = await this.supabase.from("books").select("*").eq("user_id", userId);
+
+            if (!data) {
+                throw new Error("Could not retrieve all books for user");
+            }
+
+            this.allBooks = data;
+        }
+    }
+
     async logout() {
         await this.supabase?.auth.signOut();
         goto("/login");
+    }
+
+    getBookById(bookId: number) {
+        return this.allBooks.find((book) => book.id === bookId);
+    }
+
+    async updateBook(bookId: number, updatedObject: Partial<UpdatableBookFields>) {
+        if (!this.supabase) {
+            return;
+        }
+
+        const { status, error } = await this.supabase.from("books").update(updatedObject).eq('id', bookId);
+
+        if (status === 204 && !error) {
+            this.allBooks = this.allBooks.map((book) => {
+                if (book.id === bookId) {
+                    return {
+                        ...book,
+                        ...updatedObject
+                    }
+                } else {
+                    return book;
+                }
+            })
+        }
+    }
+
+    async uploadBookCover(file: File, bookId: number) {
+        if (!this.user || !this.supabase) {
+            return;
+        }
+
+        const filePath = `${this.user.id}/${new Date().getTime()}_${file.name}`;
+        const { error: uploadError } = await this.supabase.storage
+            .from('book-covers')
+            .upload(filePath, file);
+
+        if (uploadError) {
+            return console.log(uploadError);
+        }
+
+        const { data: { publicUrl }, } = this.supabase.storage.from('book-covers').getPublicUrl(filePath);
+
+        await this.updateBook(bookId, { cover_image: publicUrl });
+    }
+
+    async deleteBookFromLibrary(bookId: number) {
+        if (!this.supabase) {
+            return;
+        }
+
+        const { error, status } = await this.supabase.from('books').delete().eq('id', bookId);
+        if (!error && status === 204) {
+            this.allBooks = this.allBooks.filter((book) => book.id !== bookId);
+        }
+
+        goto("/private/dashboard");
     }
 
     getFavoriteGenre() {

@@ -13,7 +13,7 @@
             ? "Finished"
             : book.started_reading_on
               ? "Currently reading"
-              : "Finished",
+              : "Not started",
     );
 
     // ==>> Another way to get bookStatus
@@ -28,7 +28,7 @@
     // })
 </script>
 
-<a class="book-card" href={"/private/books/${book.id}"}>
+<a class="book-card" href={`/private/books/${book.id}`}>
     <div class="book-status">
         <span>{bookStatus}</span>
     </div>
@@ -41,6 +41,7 @@
         <h4>{book.title}</h4>
         <p class="mb-s">{book.author}</p>
         <StarRating isReadOnly={true} value={book.rating || 0} />
+    </div>
     <h4>{book.title}</h4>
 </a>
 
